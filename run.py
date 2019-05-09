@@ -18,7 +18,7 @@ def diabetes_api():
 	print(" ")
 	print(humidityTemp)
 
-	return key
+	return celciusTemp
 
 if __name__ == '__main__':
     my_awesome_app.run()
