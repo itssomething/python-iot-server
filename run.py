@@ -12,7 +12,11 @@ def hello_world():
 def diabetes_api():
 	req_data = request.get_json()
 
-	key = req_data["key"]
+	celciusTemp = req_data["celciusTemp"]
+	humidityTemp = req_data["humidityTemp"]
+	print(celciusTemp)
+	print(" ")
+	print(humidityTemp)
 
 	return key
 
