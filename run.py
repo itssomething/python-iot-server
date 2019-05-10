@@ -1,5 +1,7 @@
 from flask import Flask
 from flask import request
+from flask import jsonify
+import requests
 
 my_awesome_app = Flask(__name__)
 
@@ -11,14 +13,30 @@ def hello_world():
 @my_awesome_app.route('/api/diabetes', methods=['POST'])
 def diabetes_api():
 	req_data = request.get_json()
-
-	celciusTemp = req_data["celciusTemp"]
+	print(req_data)
+	celsiusTemp = req_data["celsiusTemp"]
 	humidityTemp = req_data["humidityTemp"]
-	print(celciusTemp)
+	print(celsiusTemp)
 	print(" ")
 	print(humidityTemp)
 
-	return celciusTemp
+	return celsiusTemp
+
+@my_awesome_app.route('/api', methods=['GET'])
+def get_sensor_info():
+	celsiusTemp = 27.1
+	humidityTemp = 69.2
+	print(request.args.get('test'))
+	#string = '{"celsiusTemp":"' + celsiusTemp + '",' + '"humidityTemp":"' + humidityTemp + '"}'
+	return jsonify(celsiusTemp=celsiusTemp,
+                   humidityTemp=humidityTemp)
+
+@my_awesome_app.route('/test', methods=['GET'])
+def test_weather_api():
+	url = "http://api.openweathermap.org/data/2.5/weather?q=Hanoi,vn&APPID=1364d078d44487625a44d854756268cb"
+	r = requests.get(url)
+	data = r.text
+	return data
 
 if __name__ == '__main__':
     my_awesome_app.run()
