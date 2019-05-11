@@ -1,6 +1,7 @@
 from flask import Flask
 from flask import request
 from flask import jsonify
+import json
 import requests
 
 my_awesome_app = Flask(__name__)
@@ -35,8 +36,19 @@ def get_sensor_info():
 def test_weather_api():
 	url = "http://api.openweathermap.org/data/2.5/weather?q=Hanoi,vn&APPID=1364d078d44487625a44d854756268cb"
 	r = requests.get(url)
-	data = r.text
-	return data
+	data = json.loads(r.text)
+
+	weather = data["weather"][0]["main"]
+
+	return weather
+
+@my_awesome_app.route('/api/water', methods=['POST'])
+def water_post_api():
+	req_data = request.get_json()
+	time = req_data["time"]
+
+	return jsonify(time=time)
+
 
 if __name__ == '__main__':
-    my_awesome_app.run()
+    my_awesome_app.run('0.0.0.0')
