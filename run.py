@@ -7,6 +7,9 @@ import requests
 from flask_apscheduler import APScheduler
 import math
 import numpy
+import multiprocessing
+from multiprocessing.dummy import Pool
+from multiprocessing import Process
 
 import time
 import atexit
@@ -24,6 +27,8 @@ my_awesome_app = Flask(__name__)
 #     print(str(r))
 #     return "123"
 # 	return str(r)
+lat = ""
+lon = ""
 
 def sc(x):
     return {
@@ -31,10 +36,15 @@ def sc(x):
         'Clouds': 2,
         'Drizzle': 3,
         'Mist': 4,
-        'Thunderstorm': 5
+        'Thunderstorm': 5,
+        'Rain': 5
     }[x]
 
 esp_url = "http://192.168.43.150"
+
+def send_request_to_arduino(url):
+	requests.get(url)
+
 
 def schedule_check():
 	sensor_url = esp_url + "?ab=3"
@@ -75,7 +85,7 @@ def schedule_check():
 # scheduler.add_job(func=schedule_check, trigger="interval", seconds=180)
 # scheduler.start()
 
-atexit.register(lambda: scheduler.shutdown())
+# atexit.register(lambda: scheduler.shutdown())
 
 @my_awesome_app.route('/')
 def hello_world():
@@ -88,12 +98,26 @@ def get_sensor_info():
 	sensor_data = json.loads(sensor_text.text)
 	celsiusTemp = sensor_data["celsiusTemp"]
 	humidityTemp = sensor_data["humidityTemp"]
+
+	# set up lat and long
+	global lat
+	global lon
+	lat = request.args["lat"]
+	lon = request.args["lon"]
+	print(lat)
+
 	return jsonify(celsiusTemp=celsiusTemp,
                    humidityTemp=humidityTemp)
 
 @my_awesome_app.route('/test', methods=['GET'])
 def test_weather_api():
-	url = "http://api.openweathermap.org/data/2.5/weather?q=Hanoi,vn&APPID=1364d078d44487625a44d854756268cb"
+	# url = "http://api.openweathermap.org/data/2.5/weather?q=Hanoi,vn&APPID=1364d078d44487625a44d854756268cb"
+	# print(lat)
+	global lat
+	global lon
+	url = "http://api.openweathermap.org/data/2.5/weather?lat=" + str(lat) + "&lon=" + str(lon) + "&APPID=1364d078d44487625a44d854756268cb"
+
+	print(url)
 	r = requests.get(url)
 	data = json.loads(r.text)
 
@@ -130,8 +154,12 @@ def api_with_ai():
 	celsiusTemp = sensor_data["celsiusTemp"]
 	humidityTemp = sensor_data["humidityTemp"]
 
+	# url = "http://api.openweathermap.org/data/2.5/weather?q=Hanoi,vn&APPID=1364d078d44487625a44d854756268cb"
 
-	url = "http://api.openweathermap.org/data/2.5/weather?q=Hanoi,vn&APPID=1364d078d44487625a44d854756268cb"
+	global lat
+	global lon
+	url = "http://api.openweathermap.org/data/2.5/weather?lat=" + str(lat) + "&lon=" + str(lon) + "&APPID=1364d078d44487625a44d854756268cb"
+
 	r = requests.get(url)
 	data = json.loads(r.text)
 
@@ -152,11 +180,25 @@ def api_with_ai():
 		print(amount)
 
 		water_url = esp_url + "?ab=1&cd=" + str(amount*1000)
-		requests.get(water_url)
-		print(water_url)
-		return "water"
-	else:
-		return "not watering"
+		p = Process(target=send_request_to_arduino, args=(water_url,))
+		p.start()
+		# requests.get(water_url)
 
+		print(water_url)
+		return jsonify(celsiusTemp=int_cond, humidityTemp=amount)
+		p.join()
+	else:
+		amount = 0
+		return jsonify(celsiusTemp=int_cond, humidityTemp=amount)
+
+@my_awesome_app.route('/api/water-cord', methods=['POST'])
+def water_with_cord():
+	req_data = request.get_json()
+	lat = int(req_data["lat"])
+	lon = int(req_data["lon"])
+
+
+
+	return "123"
 if __name__ == '__main__':
     my_awesome_app.run('0.0.0.0')
